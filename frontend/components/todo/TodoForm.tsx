@@ -45,18 +45,19 @@ export const TodoForm = () => {
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
       {error && (
-        <div className="p-3 bg-red-100 text-red-700 rounded-md text-sm">
+        <div className="p-3 bg-red-50 text-red-700 rounded-lg text-sm border border-red-200">
           {error}
         </div>
       )}
 
       <div className="space-y-2">
-        <label htmlFor="title" className="text-sm font-medium">
+        <label htmlFor="title" className="text-sm font-medium text-slate-700">
           Title *
         </label>
         <Input
           id="title"
           placeholder="What needs to be done?"
+          className="focus:ring-2 focus:ring-blue-500 focus:border-transparent"
           {...register('title', { required: 'Title is required' })}
           disabled={loading}
         />
@@ -66,19 +67,24 @@ export const TodoForm = () => {
       </div>
 
       <div className="space-y-2">
-        <label htmlFor="description" className="text-sm font-medium">
+        <label htmlFor="description" className="text-sm font-medium text-slate-700">
           Description
         </label>
         <Textarea
           id="description"
           placeholder="Add details..."
+          className="focus:ring-2 focus:ring-blue-500 focus:border-transparent"
           {...register('description')}
           disabled={loading}
         />
       </div>
 
-      <Button type="submit" disabled={loading}>
-        {loading ? 'Adding...' : 'Add Todo'}
+      <Button
+        type="submit"
+        disabled={loading}
+        className="bg-blue-600 hover:bg-blue-700 text-white"
+      >
+        {loading ? 'Adding...' : 'Add Task'}
       </Button>
     </form>
   );
