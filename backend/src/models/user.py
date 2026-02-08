@@ -51,8 +51,12 @@ class UserCreate(UserBase):
     @field_validator('password')
     @classmethod
     def validate_password(cls, v):
-        if len(v) < 8:
+        # Convert to bytes to check actual byte length (important for Unicode characters)
+        password_bytes = v.encode('utf-8')
+        
+        if len(password_bytes) < 8:
             raise ValueError('Password must be at least 8 characters long')
+        
         return v
 
 

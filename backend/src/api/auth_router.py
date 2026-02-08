@@ -29,7 +29,7 @@ def register(user_create: UserCreate, session: Session = Depends(get_session)):
         UserRead: The created user information
 
     Raises:
-        HTTPException: If email is already registered
+        HTTPException: If email is already registered or password validation fails
     """
     try:
         # Create the user
@@ -38,10 +38,18 @@ def register(user_create: UserCreate, session: Session = Depends(get_session)):
         # Return the user (without password)
         return db_user
     except ValueError as e:
-        # Email already registered
+        # Handle different types of value errors
+        error_msg = str(e)
+        if "already registered" in error_msg.lower():
+            status_code = status.HTTP_409_CONFLICT
+        elif "at least 8 characters" in error_msg.lower():
+            status_code = status.HTTP_400_BAD_REQUEST
+        else:
+            status_code = status.HTTP_400_BAD_REQUEST
+        
         raise HTTPException(
-            status_code=status.HTTP_409_CONFLICT,
-            detail=str(e)
+            status_code=status_code,
+            detail=error_msg
         )
 
 
