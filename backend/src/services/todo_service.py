@@ -27,8 +27,12 @@ class TodoService:
         """
         try:
             # Create the todo object with the user_id
-            db_todo = Todo.model_validate(todo_create)
-            db_todo.user_id = user_id
+            db_todo = Todo(
+                title=todo_create.title,
+                description=todo_create.description,
+                completed=todo_create.completed,
+                user_id=user_id,
+            )
 
             # Set timestamps
             now = datetime.utcnow()

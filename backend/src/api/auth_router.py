@@ -118,15 +118,11 @@ def refresh_token_endpoint(refresh_token: str):
 
     # Get user ID from the payload
     user_id = payload.get("sub")
+    email = payload.get("email")
 
-    # Since we're using stateless JWTs, we could create a new access token
-    # In a real implementation with refresh token storage, you'd verify the refresh token exists in DB
-    new_access_token_data = {
-        "sub": user_id,
-        "email": payload.get("email")
-    }
-
-    new_access_token = create_access_token_for_user(new_access_token_data)
+    # Create a new access token directly using the JWT utility
+    from ..utils.jwt_utils import create_access_token
+    new_access_token = create_access_token(data={"sub": user_id, "email": email})
 
     return {
         "access_token": new_access_token,

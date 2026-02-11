@@ -12,7 +12,17 @@ interface UserResponse {
   id: string;
   email: string;
   created_at: string;
+  updated_at?: string;
+  is_active?: boolean;
 }
+
+// Map snake_case API response to camelCase frontend type
+const mapUser = (apiUser: UserResponse) => ({
+  id: apiUser.id,
+  email: apiUser.email,
+  createdAt: apiUser.created_at,
+  updatedAt: apiUser.updated_at,
+});
 
 export const auth = {
   signIn: {
@@ -45,8 +55,8 @@ export const auth = {
         });
 
         if (userResponse.ok) {
-          const user: UserResponse = await userResponse.json();
-          return { session: { user, accessToken: data.access_token } };
+          const apiUser: UserResponse = await userResponse.json();
+          return { session: { user: mapUser(apiUser), accessToken: data.access_token } };
         }
 
         return { session: null };
@@ -76,9 +86,9 @@ export const auth = {
           throw new Error(errorData.detail || `Registration failed: ${response.status}`);
         }
 
-        const userData: UserResponse = await response.json();
+        const apiUser: UserResponse = await response.json();
 
-        return { user: userData };
+        return { user: mapUser(apiUser) };
       } catch (error) {
         console.error('Sign up error:', error);
         throw error;
@@ -103,8 +113,8 @@ export const auth = {
         return null;
       }
 
-      const user: UserResponse = await response.json();
-      return { user, accessToken: token };
+      const apiUser: UserResponse = await response.json();
+      return { user: mapUser(apiUser), accessToken: token };
     } catch (error) {
       console.error('Get session error:', error);
       return null;

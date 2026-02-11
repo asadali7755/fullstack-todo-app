@@ -4,7 +4,7 @@ from sqlmodel import Session
 from typing import Optional
 from ..database import get_session
 from ..models.user import User
-from ..auth.jwt_utils import verify_access_token
+from ..utils.jwt_utils import verify_token, is_access_token
 import uuid
 
 # HTTP Bearer token scheme
@@ -30,7 +30,14 @@ def get_current_user(
     token = credentials.credentials
 
     # Verify the token and get user ID
-    user_id = verify_access_token(token)
+    payload = verify_token(token)
+    if payload is None:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Could not validate credentials",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+    user_id = payload.get("sub")
     if user_id is None:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,

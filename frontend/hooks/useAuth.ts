@@ -86,12 +86,12 @@ const useAuth = () => {
       });
 
       if (response?.user) {
-        setAuthState({
-          user: response.user as User,
-          isAuthenticated: true,
-          isLoading: false,
-          error: null,
-        });
+        // Auto-login after successful registration
+        const loginResult = await signIn(email, password);
+        if (loginResult.success) {
+          return { success: true };
+        }
+        // If auto-login fails, still report signup success
         return { success: true };
       }
 

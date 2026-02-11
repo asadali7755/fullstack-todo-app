@@ -11,7 +11,8 @@ const TodoList = () => {
 
   useEffect(() => {
     fetchTodos();
-  }, [fetchTodos]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   if (loading && todos.length === 0) {
     return (

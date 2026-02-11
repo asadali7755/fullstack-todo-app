@@ -55,7 +55,6 @@ class Todo(TodoBase, table=True):
 class TodoRead(TodoBase):
     id: uuid.UUID
     user_id: uuid.UUID
-    user: Optional["UserRead"] = None
     created_at: datetime
     updated_at: datetime
 

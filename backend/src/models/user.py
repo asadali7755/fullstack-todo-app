@@ -43,20 +43,14 @@ class UserRead(UserBase):
     is_active: bool
 
 
-from pydantic import field_validator
-
 class UserCreate(UserBase):
     password: str  # Plain text password for creation, will be hashed before storing
 
     @field_validator('password')
     @classmethod
     def validate_password(cls, v):
-        # Convert to bytes to check actual byte length (important for Unicode characters)
-        password_bytes = v.encode('utf-8')
-        
-        if len(password_bytes) < 8:
+        if len(v) < 8:
             raise ValueError('Password must be at least 8 characters long')
-        
         return v
 
 

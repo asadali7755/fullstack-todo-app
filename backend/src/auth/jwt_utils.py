@@ -1,7 +1,6 @@
 from datetime import datetime, timedelta
 from typing import Optional
 from jose import JWTError, jwt
-from passlib.context import CryptContext
 from ..config import settings
 
 # Secret key for JWT encoding/decoding (should be set in environment)
@@ -9,23 +8,8 @@ SECRET_KEY = settings.SECRET_KEY
 ALGORITHM = settings.ALGORITHM
 ACCESS_TOKEN_EXPIRE_MINUTES = settings.ACCESS_TOKEN_EXPIRE_MINUTES
 
-# Password hashing context - using argon2 which doesn't have the 72-byte limitation
-pwd_context = CryptContext(schemes=["argon2"], deprecated="auto")
-
-def verify_password(plain_password: str, hashed_password: str) -> bool:
-    """Verify a plaintext password against a hashed password."""
-    return pwd_context.verify(plain_password, hashed_password)
-
-def get_password_hash(password: str) -> str:
-    """Hash a plaintext password."""
-    # Validate password length before hashing
-    password_bytes = password.encode('utf-8')
-    
-    # Check if password is too short
-    if len(password_bytes) < 8:
-        raise ValueError("Password must be at least 8 characters long")
-    
-    return pwd_context.hash(password)
+# Reuse the same password functions from auth/security.py
+from ..auth.security import verify_password, get_password_hash
 
 def create_access_token(data: dict, expires_delta: Optional[timedelta] = None):
     """Create a new access token with optional expiration."""

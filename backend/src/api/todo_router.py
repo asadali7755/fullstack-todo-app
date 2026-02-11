@@ -80,7 +80,7 @@ def create_todo_item(
         TodoRead: The created todo item
     """
     db_todo = TodoService.create_todo(
-        db=session,
+        session=session,
         todo_create=todo,
         user_id=current_user.id
     )
@@ -117,7 +117,7 @@ def read_todo(
         )
 
     db_todo = TodoService.get_todo_by_id(
-        db=session,
+        session=session,
         todo_id=todo_uuid,
         user_id=current_user.id
     )
@@ -163,7 +163,7 @@ def update_todo(
         )
 
     db_todo = TodoService.update_todo(
-        db=session,
+        session=session,
         todo_id=todo_uuid,
         user_id=current_user.id,
         todo_update=todo_update
@@ -205,7 +205,7 @@ def delete_todo(
         )
 
     success = TodoService.delete_todo(
-        db=session,
+        session=session,
         todo_id=todo_uuid,
         user_id=current_user.id
     )
@@ -250,7 +250,7 @@ def toggle_todo_completion(
         )
 
     db_todo = TodoService.toggle_completion(
-        db=session,
+        session=session,
         todo_id=todo_uuid,
         user_id=current_user.id
     )

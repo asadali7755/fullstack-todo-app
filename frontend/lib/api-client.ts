@@ -3,7 +3,7 @@ import { auth } from './auth';
 
 // Create axios instance
 const apiClient = axios.create({
-  baseURL: process.env.NEXT_PUBLIC_API_BASE_URL || process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:8001',
+  baseURL: process.env.NEXT_PUBLIC_API_BASE_URL || process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:8000',
   headers: {
     'Content-Type': 'application/json',
   },
@@ -11,12 +11,12 @@ const apiClient = axios.create({
 
 // Request interceptor to attach JWT token
 apiClient.interceptors.request.use(
-  async (config) => {
-    // Get the current session
-    const session = await auth.getSession();
+  (config) => {
+    // Read token directly from localStorage (no extra HTTP call)
+    const token = typeof window !== 'undefined' ? localStorage.getItem('access_token') : null;
 
-    if (session?.accessToken) {
-      config.headers.Authorization = `Bearer ${session.accessToken}`;
+    if (token) {
+      config.headers.Authorization = `Bearer ${token}`;
     }
 
     return config;

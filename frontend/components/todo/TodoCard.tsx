@@ -1,9 +1,8 @@
 'use client';
 
 import React, { useState } from 'react';
-import { Button } from '@/components/ui/Button';
-import { Checkbox } from '@/components/ui/Checkbox';
-import { useTodos } from '@/hooks/useTodos';
+import { useTodoContext } from '@/context/TodoContext';
+import { Pencil, Trash2, Check, X } from 'lucide-react';
 import type { Todo } from '@/types';
 
 interface TodoCardProps {
@@ -11,7 +10,7 @@ interface TodoCardProps {
 }
 
 export const TodoCard = ({ todo }: TodoCardProps) => {
-  const { toggleTodoCompletion, updateTodo, deleteTodo } = useTodos();
+  const { toggleTodoCompletion, updateTodo, deleteTodo } = useTodoContext();
   const [isEditing, setIsEditing] = useState(false);
   const [editTitle, setEditTitle] = useState(todo.title);
   const [editDescription, setEditDescription] = useState(todo.description || '');
@@ -24,117 +23,145 @@ export const TodoCard = ({ todo }: TodoCardProps) => {
   };
 
   const handleSaveEdit = async () => {
+    if (!editTitle.trim()) return;
     setLoading(true);
     const result = await updateTodo(todo.id, {
       title: editTitle,
       description: editDescription,
     });
-
-    if (result.success) {
-      setIsEditing(false);
-    }
+    if (result.success) setIsEditing(false);
     setLoading(false);
   };
 
   const handleDelete = async () => {
-    if (window.confirm('Are you sure you want to delete this todo?')) {
+    if (window.confirm('Delete this task?')) {
       setLoading(true);
       await deleteTodo(todo.id);
       setLoading(false);
     }
   };
 
-  return (
-    <div className={`p-4 rounded-lg border ${todo.completed ? 'bg-green-50 border-green-200' : 'bg-white border-slate-200'} shadow-sm hover:shadow-md transition-shadow`}>
-      {isEditing ? (
+  if (isEditing) {
+    return (
+      <div className="rounded-xl bg-indigo-500/5 border border-indigo-500/20 p-4">
         <div className="space-y-3">
           <input
             type="text"
             value={editTitle}
             onChange={(e) => setEditTitle(e.target.value)}
-            className="w-full p-2 border border-slate-200 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="w-full h-10 px-3 rounded-lg border border-glass-border bg-input text-sm text-txt placeholder:text-muted focus:outline-none focus:ring-2 focus:ring-indigo-500/30 focus:border-indigo-500/40"
+            placeholder="Task title"
             disabled={loading}
+            autoFocus
           />
           <textarea
             value={editDescription}
             onChange={(e) => setEditDescription(e.target.value)}
-            className="w-full p-2 border border-slate-200 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-            rows={3}
+            className="w-full px-3 py-2 rounded-lg border border-glass-border bg-input text-sm text-txt placeholder:text-muted focus:outline-none focus:ring-2 focus:ring-indigo-500/30 focus:border-indigo-500/40 resize-none"
+            rows={2}
+            placeholder="Description (optional)"
             disabled={loading}
           />
-          <div className="flex space-x-2">
-            <Button onClick={handleSaveEdit} disabled={loading} size="sm">
-              {loading ? 'Saving...' : 'Save'}
-            </Button>
-            <Button onClick={() => setIsEditing(false)} variant="outline" disabled={loading} size="sm">
+          <div className="flex gap-2">
+            <button
+              onClick={handleSaveEdit}
+              disabled={loading || !editTitle.trim()}
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-indigo-600 text-white text-xs font-medium hover:bg-indigo-700 disabled:opacity-50 transition-colors"
+            >
+              <Check size={14} />
+              Save
+            </button>
+            <button
+              onClick={() => {
+                setIsEditing(false);
+                setEditTitle(todo.title);
+                setEditDescription(todo.description || '');
+              }}
+              disabled={loading}
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-glass text-txt-secondary text-xs font-medium hover:bg-accent transition-colors"
+            >
+              <X size={14} />
               Cancel
-            </Button>
+            </button>
           </div>
         </div>
-      ) : (
-        <div className="flex items-start space-x-3">
-          <div className="pt-1">
-            <Checkbox
-              checked={todo.completed}
-              onCheckedChange={handleToggle}
-              disabled={loading}
-            />
-          </div>
-          <div className="flex-1 min-w-0">
-            <div className="flex items-center gap-2">
-              <h3 className={`text-base font-medium ${todo.completed ? 'line-through text-slate-500' : 'text-slate-800'}`}>
-                {todo.title}
-              </h3>
-              {todo.completed && (
-                <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
-                  Completed
-                </span>
-              )}
-            </div>
-            {todo.description && (
-              <p className={`mt-1 text-sm ${todo.completed ? 'line-through text-slate-500' : 'text-slate-600'}`}>
-                {todo.description}
-              </p>
-            )}
-            <div className="flex items-center justify-between mt-2">
-              <p className="text-xs text-slate-500">
-                Created: {new Date(todo.createdAt).toLocaleDateString()}
-              </p>
-              {!todo.completed && (
-                <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
-                  Pending
-                </span>
-              )}
-            </div>
-          </div>
-          <div className="flex space-x-1">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setIsEditing(true)}
-              disabled={loading}
-              className="h-8 w-8 p-0"
+      </div>
+    );
+  }
+
+  return (
+    <div
+      className={`group rounded-xl border p-4 transition-all duration-200 hover:bg-glass ${
+        todo.completed
+          ? 'bg-emerald-500/[0.03] border-emerald-500/10'
+          : 'bg-card-bg border-glass-border hover:border-border'
+      }`}
+    >
+      <div className="flex items-start gap-3">
+        {/* Checkbox */}
+        <button
+          onClick={handleToggle}
+          disabled={loading}
+          className={`mt-0.5 shrink-0 w-5 h-5 rounded-full border-2 flex items-center justify-center transition-all duration-200 ${
+            todo.completed
+              ? 'bg-emerald-500 border-emerald-500'
+              : 'border-muted hover:border-indigo-400'
+          } ${loading ? 'opacity-50' : ''}`}
+        >
+          {todo.completed && (
+            <svg width="10" height="10" viewBox="0 0 12 12" fill="none">
+              <path d="M2.5 6L5 8.5L9.5 3.5" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+            </svg>
+          )}
+        </button>
+
+        {/* Content */}
+        <div className="flex-1 min-w-0">
+          <h3
+            className={`text-sm font-medium leading-snug ${
+              todo.completed ? 'line-through text-muted' : 'text-txt'
+            }`}
+          >
+            {todo.title}
+          </h3>
+          {todo.description && (
+            <p
+              className={`mt-0.5 text-xs leading-relaxed ${
+                todo.completed ? 'line-through text-muted' : 'text-txt-muted'
+              }`}
             >
-              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/>
-              </svg>
-            </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={handleDelete}
-              disabled={loading}
-              className="h-8 w-8 p-0"
-            >
-              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M3 6h18"/>
-                <path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/>
-                <path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/>
-              </svg>
-            </Button>
-          </div>
+              {todo.description}
+            </p>
+          )}
+          <p className="mt-1.5 text-[11px] text-muted">
+            {new Date(todo.createdAt).toLocaleDateString('en-US', {
+              month: 'short',
+              day: 'numeric',
+              year: 'numeric',
+            })}
+          </p>
         </div>
-      )}
+
+        {/* Actions */}
+        <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+          <button
+            onClick={() => setIsEditing(true)}
+            disabled={loading}
+            className="p-1.5 rounded-lg text-muted hover:text-indigo-400 hover:bg-indigo-500/10 transition-colors"
+            title="Edit"
+          >
+            <Pencil size={14} />
+          </button>
+          <button
+            onClick={handleDelete}
+            disabled={loading}
+            className="p-1.5 rounded-lg text-muted hover:text-red-400 hover:bg-red-500/10 transition-colors"
+            title="Delete"
+          >
+            <Trash2 size={14} />
+          </button>
+        </div>
+      </div>
     </div>
   );
 };

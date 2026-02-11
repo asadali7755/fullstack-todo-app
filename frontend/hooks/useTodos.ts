@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useCallback } from 'react';
 import apiClient from '@/lib/api-client';
 import type { Todo } from '@/types';
 
@@ -7,6 +7,19 @@ interface TodosState {
   loading: boolean;
   error: string | null;
 }
+
+// Map snake_case backend response to camelCase frontend type
+const mapTodoFromApi = (apiTodo: any): Todo => ({
+  id: apiTodo.id,
+  title: apiTodo.title,
+  description: apiTodo.description || '',
+  completed: apiTodo.completed,
+  userId: apiTodo.user_id,
+  createdAt: apiTodo.created_at,
+  updatedAt: apiTodo.updated_at,
+  isEditing: false,
+  isLoading: false,
+});
 
 // Retry mechanism helper
 const withRetry = async <T>(fn: () => Promise<T>, retries: number = 3): Promise<T> => {
@@ -36,15 +49,16 @@ const useTodos = () => {
   });
 
   // Fetch all todos for the authenticated user
-  const fetchTodos = async () => {
+  const fetchTodos = useCallback(async () => {
     setState(prev => ({ ...prev, loading: true, error: null }));
 
     try {
-      const response = await withRetry(() =>
-        apiClient.get<{ data: { todos: Todo[] } }>('/todos')
-      );
+      const response = await withRetry(() => apiClient.get('/todos/'));
+      // Backend returns: { todos: [...], total, offset, limit }
+      // axios puts the body in response.data
+      const apiTodos = response.data.todos || [];
       setState({
-        todos: response.data.data.todos,
+        todos: apiTodos.map(mapTodoFromApi),
         loading: false,
         error: null,
       });
@@ -52,10 +66,10 @@ const useTodos = () => {
       setState({
         todos: [],
         loading: false,
-        error: error.response?.data?.message || 'Failed to fetch todos',
+        error: error.response?.data?.detail || 'Failed to fetch todos',
       });
     }
-  };
+  }, []);
 
   // Create a new todo
   const createTodo = async (title: string, description?: string) => {
@@ -66,7 +80,7 @@ const useTodos = () => {
       title,
       description: description || '',
       completed: false,
-      userId: '', // Will be filled by the backend
+      userId: '',
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
       isEditing: false,
@@ -81,36 +95,35 @@ const useTodos = () => {
 
     try {
       const response = await withRetry(() =>
-        apiClient.post<{ data: Todo }>('/todos', {
-          title,
-          description,
-        })
+        apiClient.post('/todos/', { title, description })
       );
 
-      // Update with the actual server response
+      // Backend returns the created todo directly in response.data
+      const createdTodo = mapTodoFromApi(response.data);
+
       setState(prev => ({
         ...prev,
         todos: prev.todos.map(todo =>
-          todo.id === tempId ? { ...response.data.data, isLoading: false } : todo
+          todo.id === tempId ? createdTodo : todo
         ),
       }));
 
-      return { success: true, data: response.data.data };
+      return { success: true, data: createdTodo };
     } catch (error: any) {
       // Remove the optimistic todo if the request failed
       setState(prev => ({
         ...prev,
         todos: prev.todos.filter(todo => todo.id !== tempId),
-        error: error.response?.data?.message || 'Failed to create todo',
+        error: error.response?.data?.detail || 'Failed to create todo',
       }));
 
-      return { success: false, error: error.response?.data?.message || 'Failed to create todo' };
+      return { success: false, error: error.response?.data?.detail || 'Failed to create todo' };
     }
   };
 
   // Update an existing todo
   const updateTodo = async (id: string, updates: Partial<Todo>) => {
-    // Optimistic update: update the todo in the list immediately
+    // Optimistic update
     setState(prev => ({
       ...prev,
       todos: prev.todos.map(todo =>
@@ -120,33 +133,40 @@ const useTodos = () => {
 
     try {
       const response = await withRetry(() =>
-        apiClient.put<{ data: Todo }>(`/todos/${id}`, updates)
+        apiClient.put(`/todos/${id}`, {
+          title: updates.title,
+          description: updates.description,
+          completed: updates.completed,
+        })
       );
+
+      // Backend returns the updated todo directly
+      const updatedTodo = mapTodoFromApi(response.data);
 
       setState(prev => ({
         ...prev,
         todos: prev.todos.map(todo =>
-          todo.id === id ? { ...response.data.data, isLoading: false } : todo
+          todo.id === id ? updatedTodo : todo
         ),
       }));
 
-      return { success: true, data: response.data.data };
+      return { success: true, data: updatedTodo };
     } catch (error: any) {
-      // Revert the optimistic update if the request failed
-      fetchTodos(); // Refresh the list to revert to server state
+      // Revert the optimistic update
+      fetchTodos();
 
       setState(prev => ({
         ...prev,
-        error: error.response?.data?.message || 'Failed to update todo',
+        error: error.response?.data?.detail || 'Failed to update todo',
       }));
 
-      return { success: false, error: error.response?.data?.message || 'Failed to update todo' };
+      return { success: false, error: error.response?.data?.detail || 'Failed to update todo' };
     }
   };
 
   // Delete a todo
   const deleteTodo = async (id: string) => {
-    // Optimistic update: remove the todo from the list immediately
+    // Optimistic update: remove immediately
     const todoToDelete = state.todos.find(todo => todo.id === id);
     setState(prev => ({
       ...prev,
@@ -155,7 +175,6 @@ const useTodos = () => {
 
     try {
       await withRetry(() => apiClient.delete(`/todos/${id}`));
-
       return { success: true };
     } catch (error: any) {
       // Restore the todo if the request failed
@@ -168,16 +187,16 @@ const useTodos = () => {
 
       setState(prev => ({
         ...prev,
-        error: error.response?.data?.message || 'Failed to delete todo',
+        error: error.response?.data?.detail || 'Failed to delete todo',
       }));
 
-      return { success: false, error: error.response?.data?.message || 'Failed to delete todo' };
+      return { success: false, error: error.response?.data?.detail || 'Failed to delete todo' };
     }
   };
 
   // Toggle todo completion status
   const toggleTodoCompletion = async (id: string) => {
-    // Optimistic update: toggle the completion status immediately
+    // Optimistic update
     setState(prev => ({
       ...prev,
       todos: prev.todos.map(todo =>
@@ -187,28 +206,31 @@ const useTodos = () => {
 
     try {
       const response = await withRetry(() =>
-        apiClient.patch<{ data: Todo }>(`/todos/${id}/complete`)
+        apiClient.patch(`/todos/${id}/complete`)
       );
+
+      // Backend returns the updated todo directly
+      const updatedTodo = mapTodoFromApi(response.data);
 
       setState(prev => ({
         ...prev,
         todos: prev.todos.map(todo =>
-          todo.id === id ? { ...response.data.data, isLoading: false } : todo
+          todo.id === id ? updatedTodo : todo
         ),
       }));
 
-      return { success: true, data: response.data.data };
+      return { success: true, data: updatedTodo };
     } catch (error: any) {
-      // Revert the optimistic update if the request failed
+      // Revert the optimistic update
       setState(prev => ({
         ...prev,
         todos: prev.todos.map(todo =>
           todo.id === id ? { ...todo, completed: !todo.completed, isLoading: false } : todo
         ),
-        error: error.response?.data?.message || 'Failed to toggle completion',
+        error: error.response?.data?.detail || 'Failed to toggle completion',
       }));
 
-      return { success: false, error: error.response?.data?.message || 'Failed to toggle completion' };
+      return { success: false, error: error.response?.data?.detail || 'Failed to toggle completion' };
     }
   };
 
