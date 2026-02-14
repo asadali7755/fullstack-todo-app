@@ -33,6 +33,9 @@ class Settings(BaseSettings):
     DEFAULT_PAGE_LIMIT: int = 50
     MAX_PAGE_LIMIT: int = 100
     
+    # OpenAI settings
+    OPENAI_API_KEY: str = os.getenv("OPENAI_API_KEY", "")
+
     # Rate limiting settings
     RATE_LIMIT_ATTEMPTS_PER_MINUTE: int = int(os.getenv("RATE_LIMIT_ATTEMPTS_PER_MINUTE", "5"))
     RATE_LIMIT_WINDOW_MINUTES: int = int(os.getenv("RATE_LIMIT_WINDOW_MINUTES", "1"))

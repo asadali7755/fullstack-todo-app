@@ -8,3 +8,5 @@ python-jose[cryptography]
 passlib[argon2]
 argon2-cffi
 python-multipart
+openai-agents
+mcp
