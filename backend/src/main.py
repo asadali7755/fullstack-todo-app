@@ -2,7 +2,9 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from .api.todo_router import router as todos_router
 from .api.auth_router import router as auth_router
+from .api.chat_router import router as chat_router
 from .middleware.logging_middleware import LoggingMiddleware
+from .models.conversation import Conversation, Message  # noqa: F401 — triggers table creation
 import uvicorn
 import logging
 
@@ -31,6 +33,7 @@ app.add_middleware(
 # Include routers
 app.include_router(auth_router, prefix="/auth", tags=["authentication"])
 app.include_router(todos_router, prefix="/todos", tags=["todos"])
+app.include_router(chat_router, prefix="/api/chat", tags=["chat"])
 
 @app.get("/")
 def read_root():

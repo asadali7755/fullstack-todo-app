@@ -6,14 +6,13 @@ import Link from 'next/link';
 import { LayoutDashboard, ListTodo, User, LogOut, CheckSquare, Menu, X, Sun, Moon, MessageSquare } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
-import { TodoProvider } from '@/context/TodoContext';
 import { useTheme } from '@/context/ThemeContext';
 
-interface DashboardLayoutProps {
+interface ChatLayoutProps {
   children: React.ReactNode;
 }
 
-export default function DashboardLayout({ children }: DashboardLayoutProps) {
+export default function ChatLayout({ children }: ChatLayoutProps) {
   const pathname = usePathname();
   const router = useRouter();
   const { signOut, isAuthenticated, isLoading, user } = useAuth();
@@ -25,6 +24,13 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
       router.push('/sign-in');
     }
   }, [isLoading, isAuthenticated, router]);
+
+  // Clear chat state on sign-out
+  const handleSignOut = async () => {
+    localStorage.removeItem('chat_conversation_id');
+    await signOut();
+    router.push('/sign-in');
+  };
 
   if (isLoading) {
     return (
@@ -44,13 +50,6 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
   ];
 
   const userInitial = user?.email?.charAt(0).toUpperCase() || 'U';
-  const pageTitle = pathname === '/dashboard'
-    ? 'Dashboard'
-    : pathname === '/dashboard/tasks'
-      ? 'My Tasks'
-      : pathname === '/dashboard/profile'
-        ? 'Profile'
-        : 'Dashboard';
 
   return (
     <div className="min-h-screen bg-background transition-colors duration-300">
@@ -116,10 +115,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
             </div>
           </div>
           <button
-            onClick={async () => {
-              await signOut();
-              router.push('/sign-in');
-            }}
+            onClick={handleSignOut}
             className="w-full flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium text-txt-muted hover:bg-red-500/10 hover:text-red-500 transition-all duration-200"
           >
             <LogOut size={18} />
@@ -129,9 +125,9 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
       </aside>
 
       {/* Main area */}
-      <div className="lg:pl-[260px]">
+      <div className="lg:pl-[260px] h-screen flex flex-col">
         {/* Top bar */}
-        <header className="sticky top-0 z-10 h-16 border-b border-glass-border bg-header-bg backdrop-blur-xl transition-colors duration-300">
+        <header className="sticky top-0 z-10 h-16 border-b border-glass-border bg-header-bg backdrop-blur-xl transition-colors duration-300 shrink-0">
           <div className="flex h-full items-center justify-between px-6">
             <div className="flex items-center gap-3">
               <button
@@ -140,11 +136,10 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
               >
                 <Menu size={20} />
               </button>
-              <h1 className="text-lg font-semibold text-txt">{pageTitle}</h1>
+              <h1 className="text-lg font-semibold text-txt">AI Assistant</h1>
             </div>
 
             <div className="flex items-center gap-3">
-              {/* Theme Toggle */}
               <button
                 onClick={toggleTheme}
                 className="p-2 rounded-xl bg-glass border border-glass-border hover:bg-accent text-txt-muted hover:text-txt transition-all duration-200"
@@ -166,11 +161,9 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
           </div>
         </header>
 
-        {/* Page content */}
-        <main className="p-6 max-w-7xl mx-auto">
-          <TodoProvider>
-            {children}
-          </TodoProvider>
+        {/* Chat content — full height, no padding, no TodoProvider */}
+        <main className="flex-1 overflow-hidden">
+          {children}
         </main>
       </div>
     </div>

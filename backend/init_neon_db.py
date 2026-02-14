@@ -7,6 +7,7 @@ import os
 from dotenv import load_dotenv
 from src.models.user import User
 from src.models.todo import Todo
+from src.models.conversation import Conversation, Message
 
 def init_database():
     # Load environment variables from .env file
